@@ -8,6 +8,8 @@ Website HTML/CSS/JavaScript thuần, không cần backend, cơ sở dữ liệu,
 - Vòng quay có tên từng học sinh, chỉnh màu, âm thanh, xáo trộn, thời lượng 4/7/10/15 giây và đếm thời gian còn lại.
 - Cuộc đua vịt WebGL 3D, đếm ngược, tạm dừng, phóng to.
 - Nhập danh sách, cộng/trừ điểm, hoàn tác, đồng hạng, lưu nhiều tiết và xuất CSV.
+- Bảng xếp hạng nổi luôn hiện trên mọi trang: kéo để di chuyển (nhấp đúp để về góc), thu gọn thành một dòng, cộng/trừ điểm ngay trên bảng.
+- Nút **⧉ PiP** mở bảng xếp hạng thành cửa sổ nổi luôn ở trên cùng, vẫn thấy khi chuyển sang PowerPoint hay ứng dụng khác. Trên Chrome/Edge 116+ cửa sổ PiP cộng/trừ điểm được; trên Safari chỉ xem; Firefox chưa hỗ trợ.
 
 ## Cấu trúc
 
@@ -21,6 +23,8 @@ lop-hoc-soi-noi/
     style.css        Kiểu giao diện cơ bản
     navigation.css   Sidebar và vòng quay
     race3d.css       Sân khấu 3D
+    rankfloat.js     Bảng xếp hạng nổi và chế độ PiP
+    rankfloat.css    Kiểu cho bảng nổi và cửa sổ PiP
   tests/wheel-timing.cjs
   package.json
   server.cjs
