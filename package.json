@@ -1,0 +1,11 @@
+{
+  "name": "lop-hoc-soi-noi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gọi tên học sinh, vòng quay, đua vịt 3D và chấm điểm theo tiết học",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node tests/wheel-timing.cjs"
+  },
+  "engines": { "node": ">=18" }
+}

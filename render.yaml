@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: lop-hoc-soi-noi
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: ./public
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
