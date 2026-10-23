@@ -9,6 +9,7 @@ Website HTML/CSS/JavaScript thuần, không cần backend, cơ sở dữ liệu,
 - Cuộc đua vịt WebGL 3D, đếm ngược, tạm dừng, phóng to.
 - Nhập danh sách, cộng/trừ điểm, hoàn tác, đồng hạng, lưu nhiều tiết và xuất CSV.
 - Bảng xếp hạng nổi luôn hiện trên mọi trang: kéo để di chuyển (nhấp đúp để về góc), thu gọn thành một dòng, cộng/trừ điểm ngay trên bảng.
+- Nút **Top 3** chỉ hiện đúng 3 bạn dẫn đầu (cả trên bảng nổi và cửa sổ PiP). Nếu nhiều bạn đồng điểm, bạn nào đạt mức điểm đó sớm hơn được ưu tiên. Bấm **Tất cả** để xem lại toàn bộ.
 - Nút **⧉ PiP** mở bảng xếp hạng thành cửa sổ nổi luôn ở trên cùng, vẫn thấy khi chuyển sang PowerPoint hay ứng dụng khác. Trên Chrome/Edge 116+ cửa sổ PiP cộng/trừ điểm được; trên Safari chỉ xem; Firefox chưa hỗ trợ.
 
 ## Cấu trúc

@@ -3,7 +3,7 @@
 // Dự phòng: vẽ bảng lên canvas và phát qua video PiP (Safari...), chỉ xem.
 (function(){
   const PREF_KEY='soi-noi-float-v1';
-  let prefs={x:null,y:null,min:false};
+  let prefs={x:null,y:null,min:false,top3:false};
   try{Object.assign(prefs,JSON.parse(localStorage.getItem(PREF_KEY)||'{}'));}catch(e){}
   const savePrefs=()=>{try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch(e){}};
 
@@ -12,6 +12,7 @@
   const peek=panel.querySelector('.fr-peek');
   const pipBtn=panel.querySelector('[data-fr="pip"]');
   const minBtn=panel.querySelector('[data-fr="min"]');
+  const topBtn=panel.querySelector('[data-fr="top"]');
   let pipWin=null, videoPip=null, lastScores=new Map();
 
   const canDocPip='documentPictureInPicture' in window;
@@ -20,7 +21,10 @@
 
   function standings(){
     const s=current();
-    const sorted=[...s.students].sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name,'vi'));
+    // Đồng điểm: ai đạt mức điểm hiện tại sớm hơn đứng trước, sau đó theo tên (chữ cuối).
+    const reached=new Map();s.events.forEach((e,i)=>reached.set(e.studentId,i));
+    const given=n=>n.trim().split(/\s+/).reverse().join(' ');
+    const sorted=[...s.students].sort((a,b)=>b.score-a.score||(reached.get(a.id)??Infinity)-(reached.get(b.id)??Infinity)||given(a.name).localeCompare(given(b.name),'vi'));
     const hasPoints=s.events.length>0;
     return {s,hasPoints,rows:sorted.map(p=>({p,rank:hasPoints?sorted.findIndex(x=>x.score===p.score)+1:null}))};
   }
@@ -29,10 +33,12 @@
     const {s,rows}=standings();
     const sub=`<div class="fr-sub">${esc(s.className)} · ${esc(s.title)}</div>`;
     if(!rows.length)return sub+'<div class="fr-empty">Chưa có học sinh.<br>Nhập danh sách ở mục “Học sinh &amp; điểm”.</div>';
-    return sub+'<ol class="fr-list">'+rows.map(({p,rank})=>{
+    const shown=prefs.top3?rows.slice(0,3):rows;
+    const more=rows.length-shown.length;
+    return sub+'<ol class="fr-list">'+shown.map(({p,rank})=>{
       const changed=lastScores.has(p.id)&&lastScores.get(p.id)!==p.score;
       return `<li class="fr-row${rank&&rank<=3&&p.score>0?' top'+rank:''}${changed?' fr-bump':''}"><span class="fr-rank">${rank??'—'}</span><span class="fr-name" title="${esc(p.name)}">${esc(p.name)}</span><span class="fr-score">${p.score}</span>${withButtons?`<span class="fr-btns"><button data-id="${p.id}" data-d="-1" aria-label="Trừ điểm ${esc(p.name)}">−</button><button data-id="${p.id}" data-d="1" aria-label="Cộng điểm ${esc(p.name)}">+</button></span>`:''}</li>`;
-    }).join('')+'</ol>';
+    }).join('')+'</ol>'+(more>0?`<div class="fr-more">Top 3 · còn ${more} học sinh${rows[2]&&rows[3]&&rows[2].p.score===rows[3].p.score?' · đồng điểm: ưu tiên bạn đạt điểm sớm hơn':''}</div>`:'');
   }
 
   function peekText(){
@@ -62,6 +68,19 @@
   function setMin(v){prefs.min=v;panel.classList.toggle('is-min',v);minBtn.textContent=v?'▢':'–';minBtn.title=minBtn.ariaLabel=v?'Mở rộng bảng xếp hạng':'Thu gọn bảng xếp hạng';savePrefs();clamp();}
   minBtn.onclick=()=>setMin(!prefs.min);
   peek.onclick=()=>setMin(false);
+
+  // ----- Chế độ Top 3 -----
+  function syncTopBtns(){
+    for(const b of[topBtn,pipWin?.document.getElementById('pipTop')].filter(Boolean)){
+      b.textContent=prefs.top3?'Tất cả':'Top 3';
+      b.title=prefs.top3?'Hiện toàn bộ danh sách':'Chỉ hiện 3 bạn dẫn đầu';
+      b.setAttribute('aria-pressed',prefs.top3);
+    }
+    panel.classList.toggle('is-top3',prefs.top3);
+    pipWin?.document.body.classList.toggle('is-top3',prefs.top3);
+  }
+  function setTop3(v){prefs.top3=v;savePrefs();syncTopBtns();update();clamp();}
+  topBtn.onclick=()=>setTop3(!prefs.top3);
 
   // ----- Kéo thả -----
   function place(x,y){panel.style.left=x+'px';panel.style.top=y+'px';panel.style.right='auto';panel.style.bottom='auto';}
@@ -94,7 +113,7 @@
   }
 
   async function openDocPip(){
-    pipWin=await documentPictureInPicture.requestWindow({width:320,height:Math.min(560,140+current().students.length*40)});
+    pipWin=await documentPictureInPicture.requestWindow({width:320,height:prefs.top3?260:Math.min(560,140+current().students.length*40)});
     const d=pipWin.document;
     d.documentElement.lang='vi';
     d.title='Bảng xếp hạng';
@@ -102,10 +121,11 @@
       const l=d.createElement('link');l.rel='stylesheet';l.href=href;d.head.append(l);
     }
     d.body.className='fr-pipdoc';
-    d.body.innerHTML='<header class="fr-head"><span class="fr-title">🏆 Bảng xếp hạng</span><span class="fr-live">● TRỰC TIẾP</span></header><div class="fr-body" id="pipBody"></div>';
+    d.body.innerHTML='<header class="fr-head"><span class="fr-title">🏆 Bảng xếp hạng</span><span class="fr-live">● TRỰC TIẾP</span><button type="button" id="pipTop"></button></header><div class="fr-body" id="pipBody"></div>';
     d.getElementById('pipBody').addEventListener('click',onScoreClick);
+    d.getElementById('pipTop').onclick=()=>setTop3(!prefs.top3);
     pipWin.addEventListener('pagehide',()=>{pipWin=null;setPipState(false);});
-    setPipState(true);update();
+    setPipState(true);syncTopBtns();update();
   }
 
   // Dự phòng: canvas -> video PiP
@@ -116,7 +136,7 @@
     ctx.fillStyle='#227454';ctx.fillRect(0,0,W,62);
     ctx.fillStyle='#fff';ctx.font=`700 19px ${F}`;ctx.fillText('🏆 Bảng xếp hạng',16,30);
     ctx.font=`500 12px ${F}`;ctx.fillStyle='#d5eadf';ctx.fillText(`${s.className} · ${s.title}`.slice(0,48),16,50);
-    const max=Math.floor((H-74)/36);
+    const max=prefs.top3?3:Math.floor((H-74)/36);
     rows.slice(0,max).forEach(({p,rank},i)=>{
       const y=74+i*36;
       ctx.fillStyle=p.score<=0?'#fff':rank===1?'#fbf1d3':rank===2?'#eef1f3':rank===3?'#f8e9de':'#fff';
@@ -128,7 +148,7 @@
       ctx.fillStyle='#227454';ctx.font=`800 15px ${F}`;ctx.textAlign='right';ctx.fillText(p.score,W-22,y+20);ctx.textAlign='left';
     });
     if(!rows.length){ctx.fillStyle='#829083';ctx.font=`500 13px ${F}`;ctx.fillText('Chưa có học sinh.',16,100);}
-    if(rows.length>max){ctx.fillStyle='#829083';ctx.font=`500 11px ${F}`;ctx.fillText(`+${rows.length-max} học sinh khác`,16,H-8);}
+    if(rows.length>max){if(prefs.top3){ctx.fillStyle='#829083';ctx.font=`500 12px ${F}`;ctx.fillText(`Top 3 · còn ${rows.length-3} học sinh`,16,74+3*36+20);}else ctx.fillStyle='#829083';ctx.font=`500 11px ${F}`;ctx.fillText(`+${rows.length-max} học sinh khác`,16,H-8);}
   }
   async function openVideoPip(){
     drawCanvas();
@@ -154,6 +174,7 @@
   setPipState(false);
   if(prefs.x!=null)requestAnimationFrame(clamp);
   setMin(!!prefs.min);
+  syncTopBtns();
   window.FloatRank={update};
   update();
 })();
